@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { socket } from "./socket";
 import CryptoJS from "crypto-js";
+import ReactMarkdown from "react-markdown";
 interface EncMsg {
   chat: string;
   time?: string;
@@ -180,7 +181,7 @@ function Chat({ chatId }: { chatId: string }) {
                 return (
                   <tr key={`chat-${msg._id}`}>
                     <td style={{ width: "30%" }}>{msg.dMem ?? "encrypted"}</td>
-                    <td style={{ width: "70%" }}>{msg.dMsg ?? "encrypted"}</td>
+                    <td style={{ width: "70%" }}><ReactMarkdown>{msg.dMsg ?? "encrypted"}</ReactMarkdown></td>
                   </tr>
                 );
               })}
