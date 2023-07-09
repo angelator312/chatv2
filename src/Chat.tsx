@@ -8,6 +8,7 @@ interface EncMsg {
   dMsg?: string | null;
   dMem?: string | null;
   mem: string;
+  cEnc?: boolean;
   enc: boolean;
   _id: string;
   chat_name?: string;
@@ -15,20 +16,24 @@ interface EncMsg {
 function decrypt(m: EncMsg[], p: string) {
   try {
     m = m.map((e) => {
-      if (e.enc) {
-        return {
+      if (e.cEnc) {
+        const out = {
           ...e,
           dMsg: CryptoJS.AES.decrypt(e.msg, p).toString(CryptoJS.enc.Utf8),
           dMem: CryptoJS.AES.decrypt(e.mem, p).toString(CryptoJS.enc.Utf8),
-          enc: false,
+          cEnc: false,
         };
+        // console.log("decrypt1",out);
+        return out;
       } else {
-        return {
+        const out = {
           ...e,
           dMsg: e.msg,
           dMem: e.mem,
-          enc: false,
+          cEnc: false,
         };
+        // console.log("decrypt0",out);
+        return out;
       }
     });
   } catch (e) {
@@ -41,12 +46,15 @@ function decrypt(m: EncMsg[], p: string) {
 }
 function encrypt(m: EncMsg[]): EncMsg[] {
   return m.map((e) => {
-    return {
-      ...e,
-      enc: true,
-      dMem: null,
-      dMsg: null,
-    };
+    if (e.enc) {
+      return {
+        ...e,
+        cEnc: e.enc,
+        dMem: null,
+        dMsg: null,
+      };
+    }
+    return e;
   });
 }
 function Chat({ chatId }: { chatId: string }) {
@@ -76,15 +84,17 @@ function Chat({ chatId }: { chatId: string }) {
   function onChatMessage(msg: EncMsg) {
     // console.log(msg,msgs);
     setMsgs((prev) => {
-      if (!msgs.find((e) => e._id === msg._id)) {
-        let d = prev.concat([msg]);
-        // console.log("msg", password);
+      if (!prev.find((e) => e._id === msg._id)) {
+        // console.log("newMsg:",msg);
 
+        let d = [msg];
+        // console.log("msg", password);
+        d[0].cEnc = d[0].enc;
         if (password) d = decrypt(d, password).m;
         if (msg.chat_name) {
           setN(msg.chat_name);
         }
-        return d;
+        return prev.concat(d);
       }
       return prev;
     });
