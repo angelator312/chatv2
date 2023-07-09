@@ -74,24 +74,26 @@ function Chat({ chatId }: { chatId: string }) {
     e.preventDefault();
     // console.log("sendMsg", password);
 
-    if (password)
+    if (password) {
       socket.emit("chat message", {
         chat: chatId,
         msg: CryptoJS.AES.encrypt(content, password).toString(),
         mem: CryptoJS.AES.encrypt(member, password).toString(),
         enc: true,
       });
+      setC("");
+    }
   };
   function onChatMessage(msg: EncMsg) {
     // console.log(msg,msgs);
     setMsgs((prev) => {
       if (!prev.find((e) => e._id === msg._id)) {
         // console.log("newMsg:",msg);
-
+        const p=sessionStorage.getItem(`password-${chatId}`);
         let d = [msg];
-        // console.log("msg", password);
+        console.log("msg", p);
         d[0].cEnc = d[0].enc;
-        if (password) d = decrypt(d, password).m;
+        if (p) d = decrypt(d, p).m;
         if (msg.chat_name) {
           setN(msg.chat_name);
         }
@@ -181,7 +183,9 @@ function Chat({ chatId }: { chatId: string }) {
                 return (
                   <tr key={`chat-${msg._id}`}>
                     <td style={{ width: "30%" }}>{msg.dMem ?? "encrypted"}</td>
-                    <td style={{ width: "70%" }}><ReactMarkdown>{msg.dMsg ?? "encrypted"}</ReactMarkdown></td>
+                    <td style={{ width: "70%" }}>
+                      <ReactMarkdown>{msg.dMsg ?? "encrypted"}</ReactMarkdown>
+                    </td>
                   </tr>
                 );
               })}
@@ -215,6 +219,7 @@ function Chat({ chatId }: { chatId: string }) {
                   name="msg"
                   type="text"
                   onChange={(e) => setC(e.target.value)}
+                  value={content}
                   required
                 />
                 <input className="btn btn-primary" type="submit" />

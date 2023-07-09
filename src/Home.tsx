@@ -1,19 +1,16 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { socket } from "./socket";
 function Home() {
+  const navigate = useNavigate();
   const [cName, setN] = useState("");
   function newChat(e: any) {
     e.preventDefault();
-    const location =
-    window.location.port === "3000"
-    ? "http://localhost:3000"
-    : "//chat.angelator312.top";
-    function onF(e:any) {
-      window.location.replace(`${location}/chats/${e.uuid}`);
-  
+    function onF(e: any) {
+      navigate(`/chats/${e.uuid}`);
     }
-    const d=new Date().getTime();
-    socket.emit("newChat", { name: cName,date:d });
+    const d = new Date().getTime();
+    socket.emit("newChat", { name: cName, date: d });
     socket.on(`uuid-${d}`, onF);
   }
   return (
@@ -30,7 +27,7 @@ function Home() {
               name="name"
               className="form-control"
               placeholder="Enter chat name"
-              onChange={(e)=>setN(e.target.value)}
+              onChange={(e) => setN(e.target.value)}
             />
             <br />
             <input

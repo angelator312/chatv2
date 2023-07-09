@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import { createBrowserRouter, RouterProvider, useParams } from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  useParams,
+} from "react-router-dom";
 import { socket } from "./socket";
 import "./App.css";
 import Chat from "./Chat";
@@ -32,10 +36,10 @@ function App() {
     {
       path: "/chats/:chatId",
       // element: <Chat chatId="426d403f-dd2d-4dc7-bab3-685c10ebd919" />,
-      Component:()=>{
-        let {chatId }=useParams();
-        return <Chat chatId={chatId as string} />
-      }
+      Component: () => {
+        let { chatId } = useParams();
+        return <Chat chatId={chatId as string} />;
+      },
     },
   ]);
 
