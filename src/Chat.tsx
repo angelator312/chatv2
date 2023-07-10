@@ -89,7 +89,7 @@ function Chat({ chatId }: { chatId: string }) {
     setMsgs((prev) => {
       if (!prev.find((e) => e._id === msg._id)) {
         // console.log("newMsg:",msg);
-        const p=sessionStorage.getItem(`password-${chatId}`);
+        const p = sessionStorage.getItem(`password-${chatId}`);
         let d = [msg];
         console.log("msg", p);
         d[0].cEnc = d[0].enc;
@@ -131,11 +131,12 @@ function Chat({ chatId }: { chatId: string }) {
                 placeholder="Password,type it here"
                 onChange={(e) => setP(e.target.value)}
                 name="pwd"
-                type="text"
+                type="password"
                 value={password}
               />
 
               <button
+                disabled={!password}
                 className="btn btn-primary"
                 onClick={() => {
                   if (!decrypted) {
@@ -222,7 +223,11 @@ function Chat({ chatId }: { chatId: string }) {
                   value={content}
                   required
                 />
-                <input className="btn btn-primary" type="submit" />
+                <input
+                  disabled={!(!!content && !!password && decrypted && !!member)}
+                  className="btn btn-primary"
+                  type="submit"
+                />
               </div>
             </div>
           </form>

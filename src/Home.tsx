@@ -9,9 +9,8 @@ function Home() {
     function onF(e: any) {
       navigate(`/chats/${e.uuid}`);
     }
-    const d = new Date().getTime();
-    socket.emit("newChat", { name: cName, date: d });
-    socket.on(`uuid-${d}`, onF);
+    socket.emit("newChat", { name: cName });
+    socket.once(`chatCreate`, onF);
   }
   return (
     <div className="card mt-5 mx-5" id="index">

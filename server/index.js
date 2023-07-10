@@ -43,9 +43,9 @@ io.on("connection", async (socket) => {
   socket.on("newChat", async (extra = {}) => {
     const newChat = uuid.v4();
     await chats.addMsg(newChat, "System-Owner-Chats", "Hello members!", false, {
-      chat_name: extra.name||"😆:?UNNAMED?:😆",
+      chat_name: extra.name || "😆:?UNNAMED?:😆",
     });
-    socket.emit(`uuid-${extra.date}`,{uuid: newChat});
+    socket.emit(`chatCreate`, { uuid: newChat });
   });
 });
 // ---------------- finish io ---------------------
