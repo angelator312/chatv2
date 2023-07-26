@@ -2,19 +2,9 @@ import { useEffect, useState } from "react";
 import { socket } from "./socket";
 import CryptoJS from "crypto-js";
 import ReactMarkdown from "react-markdown";
-interface EncMsg {
-  chat: string;
-  time?: string;
-  msg: string;
-  dMsg?: string | null;
-  dMem?: string | null;
-  mem: string;
-  cEnc?: boolean;
-  enc: boolean;
-  _id: string;
-  chat_name?: string;
-}
-function decrypt(m: EncMsg[], p: string) {
+import { EncMsg, ChatDescription } from "./interfaces";
+
+function decryptMsgs(m: EncMsg[], p: string) {
   try {
     m = m.map((e) => {
       if (e.cEnc) {
@@ -24,16 +14,16 @@ function decrypt(m: EncMsg[], p: string) {
           dMem: CryptoJS.AES.decrypt(e.mem, p).toString(CryptoJS.enc.Utf8),
           cEnc: false,
         };
-        // console.log("decrypt1",out);
+        // console.log("decrypt1", out);
+
         return out;
       } else {
         const out = {
           ...e,
           dMsg: e.msg,
           dMem: e.mem,
-          cEnc: false,
         };
-        // console.log("decrypt0",out);
+        // console.log("decrypt0", out);
         return out;
       }
     });
@@ -59,6 +49,7 @@ function encrypt(m: EncMsg[]): EncMsg[] {
   });
 }
 function Chat({ chatId }: { chatId: string }) {
+  const [chatD, setCD] = useState<ChatDescription>();
   const [name, setN] = useState("Chat");
   const [password, setP] = useState(
     sessionStorage.getItem(`password-${chatId}`) ?? ""
@@ -84,6 +75,37 @@ function Chat({ chatId }: { chatId: string }) {
       setC("");
     }
   };
+  function onChatDescription(msg: ChatDescription) {
+    decryptChatD(msg);
+  }
+
+  function decryptChatD(msg: ChatDescription) {
+    let prName: string | null = null;
+    let prD: string | null = null;
+    if (msg) {
+      try {
+        if (password) {
+          prName = CryptoJS.AES.decrypt(msg.privateName, password).toString(
+            CryptoJS.enc.Utf8
+          );
+          if (msg.prDescription) {
+            prD = CryptoJS.AES.decrypt(msg.prDescription, password).toString(
+              CryptoJS.enc.Utf8
+            );
+          }
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+    setCD({
+      ...msg,
+      prDescription: prD ?? msg.prDescription,
+      privateName: prName ?? msg.privateName,
+    });
+    setN(prName ?? name);
+  }
+
   function onChatMessage(msg: EncMsg) {
     // console.log(msg,msgs);
     setMsgs((prev) => {
@@ -93,10 +115,10 @@ function Chat({ chatId }: { chatId: string }) {
         let d = [msg];
         console.log("msg", p);
         d[0].cEnc = d[0].enc;
-        if (p) d = decrypt(d, p).m;
-        if (msg.chat_name) {
-          setN(msg.chat_name);
-        }
+        if (p) d = decryptMsgs(d, p).m;
+        // if (msg.chat_name) {
+        //   setN(msg.chat_name);
+        // }
         return prev.concat(d);
       }
       return prev;
@@ -110,11 +132,13 @@ function Chat({ chatId }: { chatId: string }) {
       lastMsgTime: msgs.at(-1)?.time,
     });
     socket.on("chat message", onChatMessage);
+    socket.on("chat description", onChatDescription);
     return () => {
       socket.emit("chat leave", { chatId: chatId });
       socket.off("chat message", onChatMessage);
+      socket.off("chat description", onChatDescription);
     };
-    //eslint-disable-next-line
+    // eslint-disable-next-line
   }, [chatId]);
   return (
     <div className="card">
@@ -140,8 +164,9 @@ function Chat({ chatId }: { chatId: string }) {
                 className="btn btn-primary"
                 onClick={() => {
                   if (!decrypted) {
-                    let d = decrypt(msgs, password);
+                    let d = decryptMsgs(msgs, password);
                     if (d.y) {
+                      if (chatD) decryptChatD(chatD);
                       setMsgs(d.m);
                       setD(true);
                       sessionStorage.setItem(`password-${chatId}`, password);
@@ -181,14 +206,29 @@ function Chat({ chatId }: { chatId: string }) {
             </thead>
             <tbody id="tbody">
               {msgs.map((msg) => {
-                return (
-                  <tr key={`chat-${msg._id}`}>
-                    <td style={{ width: "30%" }}>{msg.dMem ?? "encrypted"}</td>
-                    <td style={{ width: "70%" }}>
-                      <ReactMarkdown>{msg.dMsg ?? "encrypted"}</ReactMarkdown>
-                    </td>
-                  </tr>
-                );
+                if (msg.enc) {
+                  return (
+                    <tr key={`chat-${msg._id}`}>
+                      <td style={{ width: "30%" }}>
+                        <ReactMarkdown>{msg.dMem ?? "encrypted"}</ReactMarkdown>
+                      </td>
+                      <td style={{ width: "70%" }}>
+                        <ReactMarkdown>{msg.dMsg ?? "encrypted"}</ReactMarkdown>
+                      </td>
+                    </tr>
+                  );
+                } else {
+                  return (
+                    <tr key={`chat-${msg._id}`}>
+                      <td style={{ width: "30%" }}>
+                        <ReactMarkdown>{msg.mem}</ReactMarkdown>
+                      </td>
+                      <td style={{ width: "70%" }}>
+                        <ReactMarkdown>{msg.msg}</ReactMarkdown>
+                      </td>
+                    </tr>
+                  );
+                }
               })}
             </tbody>
           </table>

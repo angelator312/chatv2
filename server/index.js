@@ -8,11 +8,12 @@ const http = require("http").Server(app);
 const io = require("socket.io")(http);
 const chats = new Mongostore("chats");
 const port = process.env.PORT ?? 8080;
+const stD = path.join(__dirname, "..", "build");
 const location = port === 8080 ? "localhost:8080" : "chat.angelator312.top";
 // свързваме монгото-акаунти
 chats.conect(process.env.MONGO_URL);
 // конфигурации
-app.use(express.static(path.join(__dirname, "..", "build")));
+app.use(express.static(stD));
 
 // край на конфигурациите
 
@@ -25,6 +26,7 @@ io.on("connection", async (socket) => {
   socket.on("chat join", async (msg) => {
     const CID = msg.chatId;
     socket.join(CID);
+    socket.emit("chat description", await chats.getCD(CID));
     let msgs = await chats.getMsgs(CID);
     if (msgs) {
       for (let i of msgs) {
@@ -40,28 +42,33 @@ io.on("connection", async (socket) => {
     socket.leave(msg.chatId);
     console.log("leave");
   });
-  socket.on("newChat", async (extra = {}) => {
+  socket.on("newChat", async (msg) => {
     const newChat = uuid.v4();
-    await chats.addMsg(newChat, "System-Owner-Chats", "Hello members!", false, {
-      chat_name: extra.name || "😆:?UNNAMED?:😆",
-    });
+    msg.chatId = newChat;
+    await chats.addCD(msg);
+    await chats.addMsg(
+      newChat,
+      "# system-owner-chat",
+      "# Hello everyone!!!",
+      false
+    );
     socket.emit(`chatCreate`, { uuid: newChat });
   });
 });
 // ---------------- finish io ---------------------
 
 // ----------------app.gets------------------------
-app.get("/", async function (req, res) {
-  res.render("index", {});
+app.get("*", async function (req, res) {
+  res.sendFile(path.join(stD, "index.html"));
 });
-app.get("/newChat", async function (req, res) {
-  console.log("New chat");
-  const newChat = uuid.v4();
-  await chats.addMsg(newChat, "System-Owner-Chats", "Hello members!", false, {
-    chat_name: req.query.name,
-  });
-  res.redirect(`http://${location}/chats/${newChat}`);
-});
+// app.get("/newChat", async function (req, res) {
+//   console.log("New chat");
+//   const newChat = uuid.v4();
+//   await chats.addMsg(newChat, "System-Owner-Chats", "Hello members!", false, {
+//     chat_name: req.query.name,
+//   });
+//   res.redirect(`http://${location}/chats/${newChat}`);
+// });
 // app.get("/chats/:chatId", async function (req, res) {
 //   const chat = await chats.getMsgs(req.params.chatId);
 //   if (chat) {
